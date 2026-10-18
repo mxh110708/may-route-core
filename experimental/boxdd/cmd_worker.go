@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	runtimeDebug "runtime/debug"
+	"time"
 
 	"github.com/sagernet/sing-box/daemon"
 	"github.com/sagernet/sing-box/include"
@@ -62,9 +64,11 @@ func runWorker() error {
 		return err
 	}
 	defer listener.Close()
+	memoryReclaimer := newWorkerMemoryReclaimer(10*time.Second, runtimeDebug.FreeOSMemory)
+	defer memoryReclaimer.close()
 	server := grpc.NewServer(append(daemon.MessageSizeServerOptions(),
-		grpc.ChainUnaryInterceptor(daemon.UnaryLocaleInterceptor),
-		grpc.ChainStreamInterceptor(daemon.StreamLocaleInterceptor),
+		grpc.ChainUnaryInterceptor(daemon.UnaryLocaleInterceptor, memoryReclaimer.unary),
+		grpc.ChainStreamInterceptor(daemon.StreamLocaleInterceptor, memoryReclaimer.stream),
 	)...)
 	RegisterApplicationServiceServer(server, &applicationService{
 		startedService: daemon.NewStartedService(daemon.ServiceOptions{Context: include.Context(context.Background())}),

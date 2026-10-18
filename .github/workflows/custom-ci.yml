@@ -34,6 +34,8 @@ jobs:
           BUILD_TAGS="$(cat release/DEFAULT_BUILD_TAGS_OTHERS)"
           LDFLAGS_SHARED="$(cat release/LDFLAGS)"
           go test -v -tags "$BUILD_TAGS" -ldflags "$LDFLAGS_SHARED" ./daemon
+      - name: Test application worker memory lifecycle
+        run: go test -v ./experimental/boxdd -run TestWorkerMemory -count=1
       - name: Build sing-box
         shell: bash
         run: |
