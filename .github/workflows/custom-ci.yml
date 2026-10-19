@@ -33,7 +33,7 @@ jobs:
         run: |
           BUILD_TAGS="$(cat release/DEFAULT_BUILD_TAGS_OTHERS)"
           LDFLAGS_SHARED="$(cat release/LDFLAGS)"
-          go test -v -tags "$BUILD_TAGS" -ldflags "$LDFLAGS_SHARED" ./daemon
+          go test -v -tags "$BUILD_TAGS" -ldflags "$LDFLAGS_SHARED" ./daemon ./experimental/locale
       - name: Test application worker memory lifecycle
         shell: bash
         run: |

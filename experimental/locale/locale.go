@@ -12,18 +12,7 @@ var (
 	localeRegistry = map[string]*Locale{
 		"en": defaultLocale,
 	}
-	localeMatcher = language.NewMatcher(
-		[]language.Tag{
-			language.English,
-			language.SimplifiedChinese,
-			language.TraditionalChinese,
-			language.Persian,
-			language.Russian,
-		},
-		language.PreferSameScript(true),
-	)
-	localeNames = []string{"en", "zh-Hans", "zh-Hant", "fa", "ru"}
-	current     atomic.Pointer[Locale]
+	current atomic.Pointer[Locale]
 )
 
 type Locale struct {
@@ -131,7 +120,7 @@ func match(localeID string) (string, bool) {
 		case strings.EqualFold(languageID, "zh-CHS"):
 			languageID = "zh-Hans"
 		case strings.EqualFold(languageID, "zh-CHT"):
-			languageID = "zh-Hant"
+			languageID = "zh-Hans"
 		}
 		localeEntries[i] = languageID
 		if hasOptions {
@@ -143,25 +132,16 @@ func match(localeID string) (string, bool) {
 	if err != nil || len(tags) == 0 {
 		return "", false
 	}
-	for i, tag := range tags {
-		base, script, region := tag.Raw()
-		if base.String() != "zh" && base.String() != "cmn" {
-			continue
+	for _, tag := range tags {
+		base, _, _ := tag.Raw()
+		switch base.String() {
+		case "zh", "cmn":
+			return "zh-Hans", true
+		case "en":
+			return "en", true
 		}
-		if script.String() == "Hans" || script.String() == "Hant" {
-			continue
-		}
-		languageID := "zh-Hans"
-		if region.String() == "TW" || region.String() == "HK" || region.String() == "MO" {
-			languageID = "zh-Hant"
-		}
-		if region.String() != "ZZ" {
-			languageID += "-" + region.String()
-		}
-		tags[i] = language.MustParse(languageID)
 	}
-	_, localeIndex, _ := localeMatcher.Match(tags...)
-	return localeNames[localeIndex], true
+	return "en", true
 }
 
 func (l *Locale) TailscaleStateText(state string) string {
