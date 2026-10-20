@@ -1,7 +1,7 @@
-# MXH Route Core
+# May Route Core
 
 Windows service integration used by the personal
-[`MXH Route`](https://github.com/mxh110708/mxh-route-desktop) distribution. This
+[`May Route`](https://github.com/mxh110708/may-route-desktop) distribution. This
 repository is derived from
 [`SagerNet/sing-box`](https://github.com/SagerNet/sing-box) and is not an
 official SagerNet release.

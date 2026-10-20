@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const serviceName = "mxh-route-daemon"
+const serviceName = "may-route-daemon"
 
 var mainCommand = &cobra.Command{
 	Use:     serviceName,

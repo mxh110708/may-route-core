@@ -23,7 +23,7 @@ const pipeSecurityDescriptor = `D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GRGW;;;AU)`
 // pipe buffer.
 const (
 	pipeBufferSize = 65536
-	daemonPipePath = `\\.\pipe\ProtectedPrefix\Administrators\mxh-route`
+	daemonPipePath = `\\.\pipe\ProtectedPrefix\Administrators\may-route`
 )
 
 func listenEndpoint() (net.Listener, error) {

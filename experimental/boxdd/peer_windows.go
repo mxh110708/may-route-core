@@ -23,8 +23,8 @@ import (
 
 const (
 	daemonExecutableName      = "sing-box-daemon.exe"
-	applicationExecutableName = "MXH Route.exe"
-	workerPipePrefix          = `\\.\pipe\mxh-route-worker.`
+	applicationExecutableName = "May Route.exe"
+	workerPipePrefix          = `\\.\pipe\may-route-worker.`
 )
 
 type windowsTransportCredentials struct {

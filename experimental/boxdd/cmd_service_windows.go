@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	serviceDisplayName             = "MXH Route Service"
-	serviceDescriptionText         = "Privileged service for the MXH Route desktop client"
-	defaultServiceWorkingDirectory = `C:\ProgramData\mxh-route-daemon`
+	serviceDisplayName             = "May Route Service"
+	serviceDescriptionText         = "Privileged service for the May Route desktop client"
+	defaultServiceWorkingDirectory = `C:\ProgramData\may-route-daemon`
 )
 
 var commandServiceFlagAllowUnsafeInstallation bool
