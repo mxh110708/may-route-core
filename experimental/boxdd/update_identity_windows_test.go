@@ -7,7 +7,7 @@ import (
 
 // Opt-in regression using real signed PE version resources, without launching an installer.
 func TestDesktopUpdateExecutableVersions(t *testing.T) {
-	installedPath, installerPath := os.Getenv("MXH_TEST_INSTALLED_EXE"), os.Getenv("MXH_TEST_INSTALLER_EXE")
+	installedPath, installerPath := os.Getenv("MAY_TEST_INSTALLED_EXE"), os.Getenv("MAY_TEST_INSTALLER_EXE")
 	if installedPath == "" || installerPath == "" {
 		t.Skip("executable fixtures not supplied")
 	}
