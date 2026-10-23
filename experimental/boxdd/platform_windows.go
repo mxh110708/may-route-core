@@ -29,6 +29,12 @@ import (
 
 var regDisablePredefinedCacheEx = windows.NewLazySystemDLL("advapi32.dll").NewProc("RegDisablePredefinedCacheEx")
 
+type windowsSystemProxy interface {
+	IsEnabled() bool
+	Enable() error
+	Disable() error
+}
+
 type windowsPlatformInterface struct {
 	daemon             *Daemon
 	access             sync.Mutex
@@ -38,7 +44,7 @@ type windowsPlatformInterface struct {
 	ownerUserID        string
 	sessionID          uint32
 	token              windows.Token
-	systemProxy        *settings.WindowsSystemProxy
+	systemProxy        windowsSystemProxy
 	systemProxyEnabled bool
 }
 
@@ -245,12 +251,17 @@ func (p *windowsPlatformInterface) PrepareOwner(identity peerIdentity) error {
 	p.access.Lock()
 	defer p.access.Unlock()
 	if listenAddress != "" {
+		if p.ownerUserID == identity.UserID && p.sessionID == identity.SessionID {
+			return nil
+		}
 		p.ownerUserID = identity.UserID
 		p.sessionID = identity.SessionID
 		return p.applySystemProxyLocked()
 	}
 	if p.token != 0 && p.ownerUserID == identity.UserID && p.sessionID == identity.SessionID {
-		return p.applySystemProxyLocked()
+		// Authorization also runs for status reads and subscriptions. Keeping
+		// the same owner must not rewrite WinINET or override another client.
+		return nil
 	}
 	token, err := p.daemon.duplicatePeerImpersonationToken(identity)
 	if err != nil {
