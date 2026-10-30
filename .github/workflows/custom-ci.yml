@@ -34,6 +34,15 @@ jobs:
           BUILD_TAGS="$(cat release/DEFAULT_BUILD_TAGS_OTHERS)"
           LDFLAGS_SHARED="$(cat release/LDFLAGS)"
           go test -v -tags "$BUILD_TAGS" -ldflags "$LDFLAGS_SHARED" ./daemon ./experimental/locale
+      - name: Test XHTTP transport and protocol boundaries
+        shell: bash
+        run: |
+          go test -v -tags with_utls,with_quic ./common/xhttpwire ./option ./transport/v2rayxhttp ./protocol/vless ./protocol/trojan ./protocol/vmess
+          go test -v -tags with_utls ./option ./transport/v2rayxhttp ./protocol/vless
+      - name: Race-test XHTTP stream cancellation and pool reset
+        if: runner.os == 'Linux'
+        shell: bash
+        run: go test -race -tags with_utls,with_quic ./common/xhttpwire ./option ./transport/v2rayxhttp
       - name: Test worker memory and Windows proxy ownership
         shell: bash
         run: |

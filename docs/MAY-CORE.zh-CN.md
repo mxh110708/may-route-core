@@ -10,6 +10,8 @@
 
 ## 修改与验证
 
+未发行的原生 XHTTP 扩展见[支持范围及验收](MAY-XHTTP.zh-CN.md)。它属于 May 客户端扩展，不能把上游 sing-box 1.14.2 或旧发行版当作已具备同样能力。
+
 ```bash
 go mod verify
 go test ./...

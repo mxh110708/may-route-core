@@ -44,6 +44,30 @@ type Outbound struct {
 }
 
 func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.VLESSOutboundOptions) (adapter.Outbound, error) {
+	if options.Transport != nil && options.Transport.Type == C.V2RayTransportTypeXHTTP {
+		if options.Flow != "" || options.Multiplex != nil && options.Multiplex.Enabled {
+			return nil, E.New("XHTTP requires empty VLESS flow and no additional multiplex")
+		}
+		if options.TLS == nil || !options.TLS.Enabled || options.TLS.Insecure || options.TLS.DisableSNI {
+			return nil, E.New("XHTTP requires verified TLS or authenticated Reality with SNI")
+		}
+		if options.TLS.MinVersion != "" && options.TLS.MinVersion != "1.2" && options.TLS.MinVersion != "1.3" || options.TLS.MaxVersion != "" && options.TLS.MaxVersion != "1.2" && options.TLS.MaxVersion != "1.3" {
+			return nil, E.New("XHTTP requires TLS 1.2 or newer")
+		}
+		if options.TLS.KernelRx || options.TLS.KernelTx {
+			return nil, E.New("XHTTP currently does not support kTLS")
+		}
+		if options.TLS.Reality != nil && options.TLS.Reality.Enabled && options.TLS.MaxVersion == "1.2" {
+			return nil, E.New("Reality XHTTP requires TLS 1.3")
+		}
+		// QUIC owns its TLS handshake; a TCP ClientHello fingerprint does not
+		// apply. Match the existing native QUIC transports instead of invoking uTLS.
+		if options.Transport.XHTTPOptions.HTTPVersion == "3" || len(options.TLS.ALPN) == 1 && options.TLS.ALPN[0] == "h3" {
+			tlsOptions := *options.TLS
+			tlsOptions.UTLS = nil
+			options.TLS = &tlsOptions
+		}
+	}
 	outboundDialer, err := dialer.New(ctx, options.DialerOptions, options.ServerIsDomain())
 	if err != nil {
 		return nil, err

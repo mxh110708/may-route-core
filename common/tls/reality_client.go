@@ -51,6 +51,10 @@ type RealityClientConfig struct {
 	shortID   [8]byte
 }
 
+// IsReality identifies the authenticated dialer, whose Xray peer intentionally
+// omits ALPN. It is not permission to skip Reality's key/SNI verification.
+func (e *RealityClientConfig) IsReality() bool { return true }
+
 func NewRealityClient(ctx context.Context, logger logger.ContextLogger, serverAddress string, options option.OutboundTLSOptions) (Config, error) {
 	return newRealityClient(ctx, logger, serverAddress, options, false)
 }
