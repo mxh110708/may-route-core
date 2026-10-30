@@ -16,7 +16,10 @@ on:
       - published
 
 jobs:
+  # Upstream Linux packages require upstream release tracks and publishing
+  # configuration. May's reviewed Windows release does not opt into these.
   calculate_version:
+    if: github.repository == 'SagerNet/sing-box'
     name: Calculate version
     runs-on: ubuntu-latest
     outputs:
@@ -44,6 +47,7 @@ jobs:
         run: |-
           echo "version=$version" >> "$GITHUB_OUTPUT"
   build:
+    if: github.repository == 'SagerNet/sing-box'
     name: Build binary
     runs-on: ubuntu-26.04
     needs:
@@ -217,6 +221,7 @@ jobs:
           name: binary-${{ matrix.os }}_${{ matrix.arch }}${{ matrix.goarm && format('v{0}', matrix.goarm) }}${{ matrix.legacy_go && '-legacy' || '' }}
           path: "dist"
   upload:
+    if: github.repository == 'SagerNet/sing-box'
     name: Upload builds
     runs-on: ubuntu-latest
     needs:
