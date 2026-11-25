@@ -10,6 +10,7 @@ import (
 
 	"github.com/sagernet/quic-go"
 	"github.com/sagernet/quic-go/http3"
+	"github.com/sagernet/sing-box/adapter"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-quic"
 	N "github.com/sagernet/sing/common/network"
@@ -24,7 +25,7 @@ func newHTTP3(ctx context.Context, dialer N.Dialer, e *endpoint, keepAlive time.
 	}
 	t := &http3.Transport{TLSClientConfig: cfg, QUICConfig: &quic.Config{KeepAlivePeriod: keepAlive, MaxIdleTimeout: 30 * time.Second, DisablePathMTUDiscovery: !C.IsLinux && !C.IsWindows}, DisableCompression: true, MaxResponseHeaderBytes: e.headerBudget()}
 	t.Dial = func(callCtx context.Context, _ string, _ *stdtls.Config, q *quic.Config) (*quic.Conn, error) {
-		dialCtx, cancel := context.WithCancel(callCtx)
+		dialCtx, cancel := context.WithCancel(adapter.ContextForMultiplexSession(callCtx))
 		stop := context.AfterFunc(ctx, cancel)
 		defer func() { stop(); cancel() }()
 		raw, err := dialer.DialContext(dialCtx, "udp", e.server)

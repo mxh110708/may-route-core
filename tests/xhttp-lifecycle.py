@@ -77,7 +77,11 @@ def run(args):
                     return json.loads(data) if data else None
                 finally:conn.close()
             with runtime.start(args.xray,server,server_port,True):
-                control('/start');before=f.Origin.count
+                control('/start')
+                result['initial_selection']=api('GET','/proxies/US-West-LA%20Entry')['now']
+                assert result['initial_selection']=='bad','Disposable service reused an unrelated selector cache'
+                result['isolated_state']=True
+                before=f.Origin.count
                 try:f.https(proxy_port,origin.server_port,ca)
                 except (OSError,http.client.HTTPException):pass
                 else:raise AssertionError('Invalid initial identity reached origin')

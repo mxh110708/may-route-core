@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/sagernet/sing-box/daemon"
@@ -48,8 +49,16 @@ func main() {
 	raw, err := os.ReadFile(*file)
 	must(err)
 	input := validate(raw)
-	must(os.MkdirAll(*directory, 0700))
-	must(libbox.Setup(&libbox.SetupOptions{BasePath: *directory, WorkingPath: *directory, TempPath: *directory}))
+	if *directory == "" {
+		panic("an explicit disposable work directory is required")
+	}
+	workingDirectory, err := filepath.Abs(*directory)
+	must(err)
+	must(os.MkdirAll(workingDirectory, 0700))
+	// Relative cache paths must stay with this disposable service. libbox.Setup
+	// configures library paths but does not change this process's current directory.
+	must(os.Chdir(workingDirectory))
+	must(libbox.Setup(&libbox.SetupOptions{BasePath: workingDirectory, WorkingPath: workingDirectory, TempPath: workingDirectory}))
 	ctx := include.Context(context.Background())
 	service := daemon.NewStartedService(daemon.ServiceOptions{Context: ctx, LogMaxLines: 128})
 	listener, err := net.Listen("tcp", "127.0.0.1:0")

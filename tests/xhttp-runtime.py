@@ -1,7 +1,8 @@
 """Windows loopback acceptance for May XHTTP; never loads user proxy profiles.
 
-Requires cryptography and psutil. Supply locally built candidate/baseline cores
-and the pinned Xray 26.3.27 Windows binary. All listeners use loopback, all
+Requires cryptography and psutil. Supply a locally built candidate and the
+pinned Xray 26.3.27 Windows binary; an optional baseline adds idle samples.
+All listeners use loopback, all
 credentials/PKI are generated, and every owned child is closed in finally.
 """
 import argparse
@@ -212,7 +213,7 @@ def idle(runtime, binary):
 def run(args):
     assert os.name == 'nt', 'This pinned executable fixture targets Windows'
     assert hashlib.sha256(args.xray.read_bytes()).hexdigest() == XRAY_SHA256, 'Pinned Xray binary differs'
-    results = {'scope': 'Windows loopback only; synthetic PKI; no system proxy/TUN or service installation', 'core_sha256': hashlib.sha256(args.core.read_bytes()).hexdigest(), 'baseline_sha256': hashlib.sha256(args.baseline.read_bytes()).hexdigest(), 'xray_sha256': XRAY_SHA256, 'cases': []}
+    results = {'scope': 'Windows loopback only; synthetic PKI; no system proxy/TUN or service installation', 'core_sha256': hashlib.sha256(args.core.read_bytes()).hexdigest(), 'baseline_sha256': hashlib.sha256(args.baseline.read_bytes()).hexdigest() if args.baseline else None, 'xray_sha256': XRAY_SHA256, 'cases': []}
     with tempfile.TemporaryDirectory(prefix='may-xhttp-', dir=args.output.parent) as temporary:
         directory = Path(temporary)
         runtime = Runtime(directory)
@@ -246,7 +247,7 @@ def run(args):
             encode = lambda b: base64.urlsafe_b64encode(b).decode().rstrip('=')
             public_key = encode(secret.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw))
             private_key = encode(secret.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw, serialization.NoEncryption()))
-            with runtime.start(args.baseline, camouflage, camouflage_port):
+            with runtime.start(args.baseline or args.core, camouflage, camouflage_port):
                 for security in ('tls', 'reality', 'vision', 'anytls'):
                     print('Testing synthetic', security, flush=True)
                     server_port = camouflage_port if security == 'anytls' else port()
@@ -307,9 +308,12 @@ def run(args):
                                         raise AssertionError(f'{security} invalid {fault} reached origin')
                                 assert Origin.count == before, 'Invalid connection used a direct fallback'
                             results['cases'].append({'security': security, 'negative_cases': 6 if security == 'reality' else 4, 'no_fallback': True})
-            results['idle_baseline'] = idle(runtime, args.baseline)
-            results['idle_candidate'] = idle(runtime, args.core)
-            results['idle_scope'] = 'Same Go toolchain, build tags, unchanged direct/mixed config; serial short samples; not long-run or Electron memory'
+            if args.baseline:
+                results['idle_baseline'] = idle(runtime, args.baseline)
+                results['idle_candidate'] = idle(runtime, args.core)
+                results['idle_scope'] = 'Same Go toolchain, build tags, unchanged direct/mixed config; serial short samples; not long-run or Electron memory'
+            else:
+                results['idle_scope'] = 'Not requested; connectivity acceptance only, no resource comparison'
         finally:
             stop.set()
             thread.join(2)
@@ -328,7 +332,7 @@ def run(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--core', type=Path, required=True)
-    parser.add_argument('--baseline', type=Path, required=True)
+    parser.add_argument('--baseline', type=Path, help='Optional matching-toolchain core for idle resource comparison')
     parser.add_argument('--xray', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     run(parser.parse_args())

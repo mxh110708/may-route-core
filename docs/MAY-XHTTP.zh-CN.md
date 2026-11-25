@@ -1,8 +1,8 @@
 # May 原生 XHTTP 客户端
 
-2026-10-29，第二十轮开发源码。需要包含此扩展的 May Core 与配套 Route；旧安装和上游 sing-box 1.14.2 不会因为加入配置字段而获得支持。当前没有推送、发行或安装更新。
+本文起于 2026-10-29 第二十轮开发记录，扩展已随 1.14.2-may.27 发行。需要包含此扩展的 May Core 与配套 Route；官方 sing-box 和缺少该扩展的旧 May 安装不会因为加入配置字段而获得支持。2026-11-25 的 [1.14.4 源码同步](MAY-UPSTREAM-1.14.4.zh-CN.md)配套为 1.14.4-may.1；源码或发行更新不自动改变本机安装。
 
-本扩展使用原有 VLESS／XUDP、拨号器、TLS／Reality 和 HTTP 库，提供 VLESS XHTTP **出站**；服务器继续使用 Xray，不引入第二常驻核心。固定协议参照 Xray **26.3.27**，线格式辅助代码适配自 Mihomo **1.19.32**，构建工具链为 Go **1.26.8**。归属及许可证见 [wire helpers](../common/xhttpwire/THIRD-PARTY.md)。
+本扩展使用原有 VLESS／XUDP、拨号器、TLS／Reality 和 HTTP 库，提供 VLESS XHTTP **出站**；服务器继续使用 Xray，不引入第二常驻核心。固定协议参照 Xray **26.3.27**，线格式辅助代码适配自 Mihomo **1.19.32**；原始验收工具链为 Go **1.26.8**，1.14.4 源码同步使用 **1.26.10**。归属及许可证见 [wire helpers](../common/xhttpwire/THIRD-PARTY.md)。
 
 ## 模式、HTTP 和身份
 
@@ -146,6 +146,8 @@ Reality 使用相同出站和传输结构，将 `tls` 改为：
 XMux 字段为 `maxConcurrency`、`maxConnections`、`cMaxReuseTimes`、`hMaxRequestTimes`、`hMaxReusableSecs` 和整数 `hKeepAlivePeriod`。前两项不可同时启用；逻辑会话复用次数、实际 HTTP 请求次数及可复用时长分别计数。到限后把新请求转到新连接，旧连接上的活动下载继续完成。
 
 显式配置的 XMux 上限都会执行。省略／全零时，May 使用一个共享惰性池和 30 秒空闲回收，不照搬 Xray 的随机默认轮换，也不主动发周期 PING；显式正的保活周期才启用相应 HTTP/2／QUIC 保活。这个本地连接策略单列说明，不改变线格式或把未使用节点加入探测。
+
+自 1.14.4-may.1 源码起，还接入核心的引用感知闲置策略：未引用出站不继续保留已闲置的连接，活动流仍可完成；被引用出站沿用池复用和空闲超时。URLTest 预热可保留会话供随后的测量使用，网络重置保留当前策略。HTTP/2／HTTP/3 物理复用会话不继承单条业务流的外部中断归属。
 
 可能分配的单项上传／填充范围受 16 MiB 上限约束；不是把配置值作为预分配大小。大型响应头预算按已验证填充范围计算，不取消整体大小限制。Mihomo 特有的 `session-table`、`session-length` 不是本固定 Xray 字段集；Deploy 可保留它们用于 Mihomo，但不会有损转换为 May 配置。
 

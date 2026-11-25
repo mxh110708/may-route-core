@@ -4,13 +4,13 @@
 
 ## 配套结构
 
-桌面仓库、其 Dashboard 子模块和本核心仓库分别记录提交。当前桌面 `version.json` 固定上游 1.14.2、Go 1.26.8，`custom-version.json` 记录 May 修订 26；核心 `go.mod` 的最低版本声明不替代桌面构建工具链。
+桌面仓库、其 Dashboard 子模块和本核心仓库分别记录提交。当前配套的桌面 `version.json` 固定上游 1.14.4、Go 1.26.10，`custom-version.json` 记录 May 修订 1，组合为 1.14.4-may.1。更换上游基础版本时 May 修订从 1 开始；核心 `go.mod` 的最低版本声明不替代桌面构建工具链。来源与适配见[稳定版同步记录](MAY-UPSTREAM-1.14.4.zh-CN.md)。
 
 开发布局将本仓库与 `sing-box-for-desktop-custom` 放在同级。桌面构建脚本负责服务程序、应用工作进程和安装资产的具体组合，先阅读[桌面开发教程](https://github.com/mxh110708/may-route-desktop/blob/custom-main/docs/DEVELOPMENT.zh-CN.md)。
 
 ## 修改与验证
 
-未发行的原生 XHTTP 扩展见[支持范围及验收](MAY-XHTTP.zh-CN.md)。它属于 May 客户端扩展，不能把上游 sing-box 1.14.2 或旧发行版当作已具备同样能力。
+原生 XHTTP 扩展见[支持范围及验收](MAY-XHTTP.zh-CN.md)。它属于 May 客户端扩展，不能把官方 sing-box 或未包含此扩展的旧 May 发行版当作已具备同样能力。
 
 ```bash
 go mod verify

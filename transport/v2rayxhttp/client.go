@@ -23,16 +23,20 @@ import (
 	N "github.com/sagernet/sing/common/network"
 )
 
-var _ adapter.V2RayClientTransport = (*Client)(nil)
+var (
+	_ adapter.V2RayMultiplexClientTransport = (*Client)(nil)
+	_ adapter.IdleConnectionKeeper          = (*Client)(nil)
+)
 
 type Client struct {
-	ctx      context.Context
-	dialer   N.Dialer
-	server   M.Socksaddr
-	up, down *endpoint
-	mode     string
-	mu       sync.Mutex
-	state    *clientState
+	ctx       context.Context
+	dialer    N.Dialer
+	server    M.Socksaddr
+	up, down  *endpoint
+	mode      string
+	mu        sync.Mutex
+	state     *clientState
+	closeIdle bool
 	// Exposes the initial HTTP/2 pool generation to package lifecycle tests.
 	generation *generation
 }
@@ -154,9 +158,11 @@ func (c *Client) newState() *clientState {
 	ctx, cancel := context.WithCancel(c.ctx)
 	s := &clientState{ctx: ctx, cancel: cancel}
 	s.up = newPool(ctx, c.dialer, c.up)
+	s.up.closeIdle = c.closeIdle
 	s.down = s.up
 	if c.down != c.up {
 		s.down = newPool(ctx, c.dialer, c.down)
+		s.down.closeIdle = c.closeIdle
 	}
 	context.AfterFunc(ctx, func() {
 		s.up.close()
@@ -181,6 +187,30 @@ func (c *Client) Close() error {
 	return nil
 }
 
+func (c *Client) MultiplexEnabled() bool {
+	return c.up.version != "1.1" || c.down.version != "1.1"
+}
+
+func (c *Client) SetKeepIdleConnections(keep bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.closeIdle = !keep
+	c.state.up.setKeepIdleConnections(keep)
+	if c.state.down != c.state.up {
+		c.state.down.setKeepIdleConnections(keep)
+	}
+}
+
+func (c *Client) CloseIdleConnections() {
+	c.mu.Lock()
+	s := c.state
+	c.mu.Unlock()
+	s.up.closeIdleConnections()
+	if s.down != s.up {
+		s.down.closeIdleConnections()
+	}
+}
+
 func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 	c.mu.Lock()
 	s := c.state
@@ -197,6 +227,7 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 		cancel()
 		return nil, err
 	}
+	up.keepSession = adapter.KeepSessionFromContext(ctx)
 	down := up
 	if s.down != s.up {
 		down, err = s.down.acquire()
@@ -206,6 +237,7 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 			cancel()
 			return nil, err
 		}
+		down.keepSession = up.keepSession
 	}
 	reader := newResponseReader()
 	conn := &Conn{reader: reader, cancel: cancel, remote: c.server}

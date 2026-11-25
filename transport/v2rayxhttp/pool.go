@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/tls"
 	W "github.com/sagernet/sing-box/common/xhttpwire"
 	N "github.com/sagernet/sing/common/network"
@@ -24,6 +25,7 @@ type pool struct {
 	endpoint                 *endpoint
 	mu                       sync.Mutex
 	closed                   bool
+	closeIdle                bool
 	closeDone                chan struct{}
 	groups                   []*group
 	all                      map[*generation]struct{}
@@ -37,9 +39,10 @@ type group struct {
 	idleTimer           *time.Timer
 }
 type lease struct {
-	pool   *pool
-	group  *group
-	closed bool
+	pool        *pool
+	group       *group
+	closed      bool
+	keepSession bool
 }
 type generation struct {
 	ctx          context.Context
@@ -154,7 +157,7 @@ func (l *lease) Close() error {
 	if !l.closed {
 		l.closed = true
 		l.group.active--
-		if l.group.active == 0 && l.group.limit > 0 && l.group.uses >= l.group.limit {
+		if l.group.active == 0 && (l.group.limit > 0 && l.group.uses >= l.group.limit || p.closeIdle && !l.keepSession) {
 			p.retire(l.group.current)
 		}
 		if l.group.active == 0 && len(p.groups) > 1 {
@@ -176,6 +179,32 @@ func (l *lease) Close() error {
 		}
 	}
 	return nil
+}
+
+func (p *pool) setKeepIdleConnections(keep bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.closeIdle = !keep
+	if !keep {
+		p.closeIdleLocked()
+	}
+}
+
+func (p *pool) closeIdleConnections() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.closeIdleLocked()
+}
+
+func (p *pool) closeIdleLocked() {
+	if p.closed {
+		return
+	}
+	for _, g := range p.groups {
+		if g.active == 0 {
+			p.retire(g.current)
+		}
+	}
 }
 
 type ownedBody struct {
@@ -232,6 +261,9 @@ func (p *pool) newGeneration() *generation {
 		g.roundTripper, g.shutdown = newHTTP3(ctx, p.dialer, e, keepAlive)
 	} else {
 		dial := func(ctx context.Context, _, _ string, _ *tls.STDConfig) (net.Conn, error) {
+			if e.version == "2" {
+				ctx = adapter.ContextForMultiplexSession(ctx)
+			}
 			dialCtx, cancel := context.WithCancel(ctx)
 			stop := context.AfterFunc(g.ctx, cancel)
 			defer func() { stop(); cancel() }()

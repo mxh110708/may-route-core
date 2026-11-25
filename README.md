@@ -4,11 +4,11 @@
 
 [English](README.en.md) · [配套开发说明](docs/MAY-CORE.zh-CN.md) · [上游协议参考](https://sing-box.sagernet.org)
 
-未发行源码已扩展原生 VLESS + TLS／Reality + XHTTP 出站，覆盖四种模式、合法 HTTP 版本、独立下载身份和高级字段。配置、连接池策略及隔离实测边界见[May XHTTP](docs/MAY-XHTTP.zh-CN.md)，不能据此推断已安装版本或公网 CDN 支持。
+May 扩展原生 VLESS + TLS／Reality + XHTTP 出站，覆盖四种模式、合法 HTTP 版本、独立下载身份和高级字段。配置、连接池策略及隔离实测边界见[May XHTTP](docs/MAY-XHTTP.zh-CN.md)，不能据此推断已安装版本或公网 CDN 支持。
 
 ## 使用哪一份代码
 
-当前维护分支为 `custom-main`，配套桌面文档基线 1.14.2-may.26。应使用桌面构建记录选定的核心版本、来源提交和工具链，不从任意分支临时编译后替换已安装服务。普通用户在 [desktop Release](https://github.com/mxh110708/may-route-desktop/releases/latest) 下载完整安装器。
+当前维护分支为 `custom-main`，源码已同步官方 sing-box **1.14.4**，配套桌面 **1.14.4-may.1**、Go **1.26.10**；[同步记录](docs/MAY-UPSTREAM-1.14.4.zh-CN.md)说明来源与适配。应使用桌面构建记录选定的核心版本、来源提交和工具链，不从任意分支临时编译后替换已安装服务。普通用户在 [desktop Release](https://github.com/mxh110708/may-route-desktop/releases/latest) 下载完整安装器。
 
 保留 `github.com/sagernet/sing-box` 模块、协议字段和必要文件名；May 的应用／服务／IPC 与上游安装身份隔离。具体实现以所选提交为准，不能把名称隔离理解成通用迁移导入承诺。
 

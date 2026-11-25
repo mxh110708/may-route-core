@@ -58,13 +58,15 @@ func TestHTTP3DuplexResetAndDialContextRelease(t *testing.T) {
 	}
 	root, cancelRoot := context.WithCancel(context.Background())
 	defer cancelRoot()
-	transport, err := NewClient(root, &testDialer{}, M.ParseSocksaddr(packet.LocalAddr().String()), option.V2RayXHTTPOptions{Mode: "stream-one", HTTPVersion: "3", Path: "/"}, tlsConfig)
+	dialer := &sessionContextDialer{t: t}
+	transport, err := NewClient(root, dialer, M.ParseSocksaddr(packet.LocalAddr().String()), option.V2RayXHTTPOptions{Mode: "stream-one", HTTPVersion: "3", Path: "/"}, tlsConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer transport.Close()
+	transport.(*Client).SetKeepIdleConnections(false)
 	for i := 0; i < 3; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(externalSessionContext(), time.Second)
 		conn, err := transport.DialContext(ctx)
 		cancel()
 		if err != nil {
@@ -88,6 +90,9 @@ func TestHTTP3DuplexResetAndDialContextRelease(t *testing.T) {
 			t.Fatal("H3 reset retained a blocked read")
 		}
 		conn.Close()
+	}
+	if dialer.calls.Load() == 0 {
+		t.Fatal("no physical HTTP/3 session was observed")
 	}
 	cancelRoot()
 	if conn, err := transport.DialContext(context.Background()); err == nil {
